@@ -1,0 +1,19 @@
+#cloud-config
+users:
+  - default
+  - name: nix-issue-8953
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+
+runcmd:
+  - # Install Nix.
+  - curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm
+  - . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+  - # Initialize flakes.
+  - nix registry list
+  - # Download for offline.
+  - nix flake clone "github:numtide/system-manager" --dest /flakes/github.com/numtide/system-manager
+  - nix registry add "github:numtide/system-manager" /flakes/github.com/numtide/system-manager
+  - # Disable outbound traffic, e.g. to github.
+  - iptables -t filter -I OUTPUT 1 -m state --state NEW -j DROP
+
